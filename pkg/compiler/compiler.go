@@ -55,6 +55,14 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.emit(code.OpMul)
 		case "/":
 			c.emit(code.OpDiv)
+		case "==":
+			c.emit(code.OpEqual)
+		case "!=":
+			c.emit(code.OpNotEqual)
+		case "<":
+			c.emit(code.OpLessThan)
+		case ">":
+			c.emit(code.OpGreaterThan)
 		default:
 			return fmt.Errorf("unknown operator %s", node.Operator)
 		}

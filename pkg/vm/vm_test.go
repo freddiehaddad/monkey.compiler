@@ -90,6 +90,26 @@ func testExpectedObject(t *testing.T, expected interface{}, actual object.Object
 	}
 }
 
+func TestComparisonOperators(t *testing.T) {
+	tests := []vmTestCase{
+		{"10 == 10", true},
+		{"10 != 10", false},
+		{"true == true", true},
+		{"true == false", false},
+		{"true != false", true},
+		{"1 < 2", true},
+		{"2 < 1", false},
+		{"2 > 1", true},
+		{"1 > 2", false},
+		{"(1 < 2) == true", true},
+		{"(1 < 2) == false", false},
+		{"(1 > 2) == true", false},
+		{"(1 > 2) == false", true},
+	}
+
+	runVmTests(t, tests)
+}
+
 func TestIntegerArithmetic(t *testing.T) {
 	tests := []vmTestCase{
 		{"1", 1},
