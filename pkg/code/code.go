@@ -20,6 +20,9 @@ const (
 
 	OpPop
 
+	OpJump
+	OpJumpNotTruthy
+
 	OpTrue
 	OpFalse
 
@@ -41,6 +44,9 @@ var definitions = map[Opcode]*Definition{
 	OpConstant: {"OpConstant", []int{2}},
 
 	OpPop: {"OpPop", []int{}},
+
+	OpJump:          {"OpJump", []int{2}},
+	OpJumpNotTruthy: {"OpJumpNotTruthy", []int{2}},
 
 	OpBang:  {"OpBang", []int{}},
 	OpMinus: {"OpMinus", []int{}},
