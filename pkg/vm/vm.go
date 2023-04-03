@@ -56,9 +56,32 @@ func (vm *VM) Run() error {
 			}
 		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv:
 			vm.executeBinaryOperation(op)
+		case code.OpEqual, code.OpNotEqual, code.OpLessThan, code.OpGreaterThan:
+			vm.executeComparison(op)
 		}
 	}
 	return nil
+}
+
+func (vm *VM) executeComparison(op code.Opcode) error {
+	right := vm.pop()
+	left := vm.pop()
+
+	leftType := left.Type()
+	rightType := right.Type()
+
+	if leftType == object.INTEGER_OBJ && rightType == object.INTEGER_OBJ {
+		return vm.executeIntegerComparison(op, left, right)
+	}
+
+	switch op {
+	case code.OpEqual:
+		return vm.push(nativeBoolToBooleanObject(left == right))
+	case code.OpNotEqual:
+		return vm.push(nativeBoolToBooleanObject(left != right))
+	default:
+		return fmt.Errorf("unknown operator: %d (%s %s)", op, leftType, rightType)
+	}
 }
 
 func (vm *VM) executeBinaryOperation(op code.Opcode) error {
@@ -74,6 +97,34 @@ func (vm *VM) executeBinaryOperation(op code.Opcode) error {
 
 	return fmt.Errorf("unsupported types for binary operation: %s %s",
 		leftType, rightType)
+}
+
+func (vm *VM) executeIntegerComparison(
+	op code.Opcode, left, right object.Object) error {
+
+	leftValue := left.(*object.Integer).Value
+	rightValue := right.(*object.Integer).Value
+
+	switch op {
+	case code.OpEqual:
+		return vm.push(nativeBoolToBooleanObject(leftValue == rightValue))
+	case code.OpNotEqual:
+		return vm.push(nativeBoolToBooleanObject(leftValue != rightValue))
+	case code.OpLessThan:
+		return vm.push(nativeBoolToBooleanObject(leftValue < rightValue))
+	case code.OpGreaterThan:
+		return vm.push(nativeBoolToBooleanObject(leftValue > rightValue))
+	default:
+		return fmt.Errorf("unknown operator: %d", op)
+	}
+}
+
+func nativeBoolToBooleanObject(result bool) object.Object {
+	if result {
+		return True
+	} else {
+		return False
+	}
 }
 
 func (vm *VM) executeBinaryIntegerOberation(
