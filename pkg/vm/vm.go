@@ -14,6 +14,8 @@ const StackSize = 2048
 var True = &object.Boolean{Value: true}
 var False = &object.Boolean{Value: false}
 
+var Null = &object.Null{}
+
 type VM struct {
 	constants    []object.Object
 	instructions code.Instructions
@@ -37,6 +39,10 @@ func (vm *VM) Run() error {
 		op := code.Opcode(vm.instructions[ip])
 
 		switch op {
+		case code.OpNull:
+			if err := vm.push(Null); err != nil {
+				return err
+			}
 		case code.OpPop:
 			vm.pop()
 		case code.OpConstant:
@@ -66,11 +72,31 @@ func (vm *VM) Run() error {
 			if err := vm.executeMinusOperator(); err != nil {
 				return err
 			}
-		default:
-			return fmt.Errorf("unhandled instruction %T (%+v)", op, op)
+		case code.OpJump:
+			address := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip = address - 1
+		case code.OpJumpNotTruthy:
+			address := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
+
+			condition := vm.pop()
+			if !isTruthy(condition) {
+				ip = address - 1
+			}
 		}
 	}
 	return nil
+}
+
+func isTruthy(obj object.Object) bool {
+	switch obj := obj.(type) {
+	case *object.Boolean:
+		return obj.Value
+	case *object.Null:
+		return false
+	default:
+		return true
+	}
 }
 
 func (vm *VM) executeMinusOperator() error {
@@ -91,6 +117,8 @@ func (vm *VM) executeBangOperator() error {
 	case True:
 		return vm.push(False)
 	case False:
+		return vm.push(True)
+	case Null:
 		return vm.push(True)
 	default:
 		return vm.push(False)
