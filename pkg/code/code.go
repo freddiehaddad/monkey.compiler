@@ -16,9 +16,14 @@ type Definition struct {
 }
 
 const (
-	OpConstant Opcode = iota
+	OpNull Opcode = iota
+
+	OpConstant
 
 	OpPop
+
+	OpJump
+	OpJumpNotTruthy
 
 	OpTrue
 	OpFalse
@@ -38,9 +43,14 @@ const (
 )
 
 var definitions = map[Opcode]*Definition{
+	OpNull: {"OpNull", []int{}},
+
 	OpConstant: {"OpConstant", []int{2}},
 
 	OpPop: {"OpPop", []int{}},
+
+	OpJump:          {"OpJump", []int{2}},
+	OpJumpNotTruthy: {"OpJumpNotTruthy", []int{2}},
 
 	OpBang:  {"OpBang", []int{}},
 	OpMinus: {"OpMinus", []int{}},
