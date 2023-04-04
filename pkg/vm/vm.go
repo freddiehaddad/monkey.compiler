@@ -66,11 +66,31 @@ func (vm *VM) Run() error {
 			if err := vm.executeMinusOperator(); err != nil {
 				return err
 			}
+		case code.OpJump:
+			address := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip = address - 1
+		case code.OpJumpNotTruthy:
+			address := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
+
+			condition := vm.pop()
+			if !isTruthy(condition) {
+				ip = address - 1
+			}
 		default:
 			return fmt.Errorf("unhandled instruction %T (%+v)", op, op)
 		}
 	}
 	return nil
+}
+
+func isTruthy(obj object.Object) bool {
+	switch obj := obj.(type) {
+	case *object.Boolean:
+		return obj.Value
+	default:
+		return true
+	}
 }
 
 func (vm *VM) executeMinusOperator() error {
