@@ -188,6 +188,10 @@ func (vm *VM) executeBinaryOperation(op code.Opcode) error {
 		return vm.executeBinaryIntegerOberation(op, left, right)
 	}
 
+	if leftType == object.STRING_OBJ && rightType == object.STRING_OBJ {
+		return vm.executeBinaryStringOperation(op, left, right)
+	}
+
 	return fmt.Errorf("unsupported types for binary operation: %s %s",
 		leftType, rightType)
 }
@@ -242,6 +246,24 @@ func (vm *VM) executeBinaryIntegerOberation(
 	}
 
 	return vm.push(&object.Integer{Value: result})
+}
+
+func (vm *VM) executeBinaryStringOperation(
+	op code.Opcode, left, right object.Object) error {
+
+	lValue := left.(*object.String).Value
+	rValue := right.(*object.String).Value
+
+	var result string
+
+	switch op {
+	case code.OpAdd:
+		result = lValue + rValue
+	default:
+		return fmt.Errorf("unknown interger operator: %d", op)
+	}
+
+	return vm.push(&object.String{Value: result})
 }
 
 func (vm *VM) LastPoppedStackElement() object.Object {
