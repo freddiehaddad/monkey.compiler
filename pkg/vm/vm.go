@@ -9,7 +9,10 @@ import (
 	"github.com/freddiehaddad/monkey.interpreter/pkg/object"
 )
 
-const StackSize = 2048
+const (
+	StackSize  = 2048
+	GlobalSize = 65536
+)
 
 var True = &object.Boolean{Value: true}
 var False = &object.Boolean{Value: false}
@@ -20,14 +23,30 @@ type VM struct {
 	constants    []object.Object
 	instructions code.Instructions
 
+	global []object.Object
+
 	stack []object.Object
 	sp    int // Always points to the next value. Top of stack is stack[sp-1]
+}
+
+func NewWithState(bytecode *compiler.Bytecode, global []object.Object) *VM {
+	return &VM{
+		instructions: bytecode.Instructions,
+		constants:    bytecode.Constants,
+
+		global: global,
+
+		stack: make([]object.Object, StackSize),
+		sp:    0,
+	}
 }
 
 func New(bytecode *compiler.Bytecode) *VM {
 	return &VM{
 		instructions: bytecode.Instructions,
 		constants:    bytecode.Constants,
+
+		global: make([]object.Object, GlobalSize),
 
 		stack: make([]object.Object, StackSize),
 		sp:    0,
@@ -83,6 +102,18 @@ func (vm *VM) Run() error {
 			if !isTruthy(condition) {
 				ip = address - 1
 			}
+		case code.OpGetGlobal:
+			globalIndex := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
+			value := vm.global[globalIndex]
+			if err := vm.push(value); err != nil {
+				return err
+			}
+		case code.OpSetGlobal:
+			globalIndex := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
+			value := vm.pop()
+			vm.global[globalIndex] = value
 		}
 	}
 	return nil
