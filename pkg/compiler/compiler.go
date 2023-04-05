@@ -157,6 +157,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return fmt.Errorf("undefined identifier %s", node.Value)
 		}
 		c.emit(code.OpGetGlobal, symbol.Index)
+	case *ast.StringLiteral:
+		string := &object.String{Value: node.Value}
+		c.emit(code.OpConstant, c.addConstant(string))
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: node.Value}
 		c.emit(code.OpConstant, c.addConstant(integer))
