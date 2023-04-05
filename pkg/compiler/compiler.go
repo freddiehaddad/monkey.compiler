@@ -20,11 +20,25 @@ type Compiler struct {
 
 	lastInstruction     EmittedInstruction
 	previousInstruction EmittedInstruction
+
+	symbolTable *SymbolTable
 }
 
 type EmittedInstruction struct {
 	OpCode   code.Opcode
 	Position int
+}
+
+func NewWithState(symbolTable *SymbolTable, constants []object.Object) *Compiler {
+	return &Compiler{
+		instructions: code.Instructions{},
+		constants:    constants,
+
+		lastInstruction:     EmittedInstruction{},
+		previousInstruction: EmittedInstruction{},
+
+		symbolTable: symbolTable,
+	}
 }
 
 func New() *Compiler {
@@ -34,6 +48,8 @@ func New() *Compiler {
 
 		lastInstruction:     EmittedInstruction{},
 		previousInstruction: EmittedInstruction{},
+
+		symbolTable: NewSymbolTable(),
 	}
 }
 
@@ -129,6 +145,18 @@ func (c *Compiler) Compile(node ast.Node) error {
 				return err
 			}
 		}
+	case *ast.LetStatement:
+		if err := c.Compile(node.Value); err != nil {
+			return err
+		}
+		symbol := c.symbolTable.Define(node.Name.Value)
+		c.emit(code.OpSetGlobal, symbol.Index)
+	case *ast.Identifier:
+		symbol, ok := c.symbolTable.Resolve(node.Value)
+		if !ok {
+			return fmt.Errorf("undefined identifier %s", node.Value)
+		}
+		c.emit(code.OpGetGlobal, symbol.Index)
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: node.Value}
 		c.emit(code.OpConstant, c.addConstant(integer))
