@@ -79,6 +79,20 @@ func (vm *VM) Run() error {
 			if err := vm.push(False); err != nil {
 				return err
 			}
+		case code.OpArray:
+			elements := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
+
+			array := &object.Array{Elements: make([]object.Object, elements)}
+
+			// Last array element is at the top of the stack
+			for i := elements; i > 0; i-- {
+				array.Elements[i-1] = vm.pop()
+			}
+
+			if err := vm.push(array); err != nil {
+				return err
+			}
 		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv:
 			vm.executeBinaryOperation(op)
 		case code.OpEqual, code.OpNotEqual, code.OpLessThan, code.OpGreaterThan:
