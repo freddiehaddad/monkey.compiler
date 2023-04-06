@@ -157,6 +157,14 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return fmt.Errorf("undefined identifier %s", node.Value)
 		}
 		c.emit(code.OpGetGlobal, symbol.Index)
+	case *ast.IndexExpression:
+		if err := c.Compile(node.Left); err != nil {
+			return err
+		}
+		if err := c.Compile(node.Index); err != nil {
+			return err
+		}
+		c.emit(code.OpIndex)
 	case *ast.ArrayLiteral:
 		for _, e := range node.Elements {
 			if err := c.Compile(e); err != nil {
