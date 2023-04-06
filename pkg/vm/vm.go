@@ -93,6 +93,31 @@ func (vm *VM) Run() error {
 			if err := vm.push(array); err != nil {
 				return err
 			}
+		case code.OpHash:
+			pairs := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
+
+			hash := &object.Hash{
+				Pairs: make(map[object.HashKey]object.HashPair),
+			}
+
+			// value, pair is the order on the stack
+			for i := 0; i < pairs; i++ {
+				value := vm.pop()
+				key := vm.pop()
+
+				pair := object.HashPair{Key: key, Value: value}
+				hashKey, ok := key.(object.Hashable)
+				if !ok {
+					return fmt.Errorf("unusable as hash key: %s", key.Type())
+				}
+
+				hash.Pairs[hashKey.HashKey()] = pair
+			}
+
+			if err := vm.push(hash); err != nil {
+				return err
+			}
 		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv:
 			vm.executeBinaryOperation(op)
 		case code.OpEqual, code.OpNotEqual, code.OpLessThan, code.OpGreaterThan:
