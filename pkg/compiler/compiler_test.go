@@ -18,6 +18,101 @@ type compilerTestCase struct {
 	expectedInstructions []code.Instructions
 }
 
+func TestHashLiterals(t *testing.T) {
+	tests := []compilerTestCase{
+		{ // 0
+			input:             "{}",
+			expectedConstants: []interface{}{},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpHash, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{ // 1
+			input:             "{1: 2}",
+			expectedConstants: []interface{}{1, 2},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpHash, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{ // 2
+			input:             "{1 + 2: 3}",
+			expectedConstants: []interface{}{1, 2, 3},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpAdd),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpHash, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{ // 3
+			input:             "{1: 2 + 3}",
+			expectedConstants: []interface{}{1, 2, 3},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpAdd),
+				code.Make(code.OpHash, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{ // 4
+			input:             "{0 + 1: 2 + 3}",
+			expectedConstants: []interface{}{0, 1, 2, 3},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpAdd),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpConstant, 3),
+				code.Make(code.OpAdd),
+				code.Make(code.OpHash, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{ // 5
+			input:             "{0: 1 + 2, 3: 4 + 5}",
+			expectedConstants: []interface{}{0, 1, 2, 3, 4, 5},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpAdd),
+				code.Make(code.OpConstant, 3),
+				code.Make(code.OpConstant, 4),
+				code.Make(code.OpConstant, 5),
+				code.Make(code.OpAdd),
+				code.Make(code.OpHash, 2),
+				code.Make(code.OpPop),
+			},
+		},
+		{ // 6
+			input:             "{0 + 1: 2, 3 + 4: 5}",
+			expectedConstants: []interface{}{0, 1, 2, 3, 4, 5},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpAdd),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpConstant, 3),
+				code.Make(code.OpConstant, 4),
+				code.Make(code.OpAdd),
+				code.Make(code.OpConstant, 5),
+				code.Make(code.OpHash, 2),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
 func TestArrayLiterals(t *testing.T) {
 	tests := []compilerTestCase{
 		{
@@ -343,22 +438,22 @@ func TestIntegerArithmetic(t *testing.T) {
 func runCompilerTests(t *testing.T, tests []compilerTestCase) {
 	t.Helper()
 
-	for _, tt := range tests {
+	for i, tt := range tests {
 		program := parse(tt.input)
 		compiler := New()
 		if err := compiler.Compile(program); err != nil {
-			t.Fatalf("compiler error: %s", err)
+			t.Fatalf("test[%d] - compiler error: %s", i, err)
 		}
 
 		bytecode := compiler.Bytecode()
 
 		if err := testInstructions(tt.expectedInstructions,
 			bytecode.Instructions); err != nil {
-			t.Fatalf("testInstructions failed: %s", err)
+			t.Fatalf("test[%d] - testInstructions failed: %s", i, err)
 		}
 
 		if err := testConstants(t, tt.expectedConstants, bytecode.Constants); err != nil {
-			t.Fatalf("testConstants failed: %s", err)
+			t.Fatalf("test[%d] - testConstants failed: %s", i, err)
 		}
 	}
 }

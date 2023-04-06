@@ -164,6 +164,16 @@ func (c *Compiler) Compile(node ast.Node) error {
 			}
 		}
 		c.emit(code.OpArray, len(node.Elements))
+	case *ast.HashLiteral:
+		for k, v := range node.Pairs {
+			if err := c.Compile(k); err != nil {
+				return err
+			}
+			if err := c.Compile(v); err != nil {
+				return err
+			}
+		}
+		c.emit(code.OpHash, len(node.Pairs))
 	case *ast.StringLiteral:
 		string := &object.String{Value: node.Value}
 		c.emit(code.OpConstant, c.addConstant(string))
