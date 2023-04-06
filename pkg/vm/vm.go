@@ -118,6 +118,32 @@ func (vm *VM) Run() error {
 			if err := vm.push(hash); err != nil {
 				return err
 			}
+		case code.OpIndex:
+			key := vm.pop()
+			value := vm.pop()
+			switch {
+			case value.Type() == object.ARRAY_OBJ && key.Type() == object.INTEGER_OBJ:
+				index := int(key.(*object.Integer).Value)
+				array := value.(*object.Array).Elements
+				if index >= 0 && index < len(array) {
+					vm.push(array[index])
+				} else {
+					vm.push(Null)
+				}
+			case value.Type() == object.HASH_OBJ:
+				hashTable := value.(*object.Hash).Pairs
+				hashKey, ok := key.(object.Hashable)
+				if !ok {
+					return fmt.Errorf("unusable as hash key: %s", key.Type())
+				}
+				if pair, ok := hashTable[hashKey.HashKey()]; ok {
+					vm.push(pair.Value)
+				} else {
+					vm.push(Null)
+				}
+			default:
+				return fmt.Errorf("index operator not supported: %s", key.Type())
+			}
 		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv:
 			vm.executeBinaryOperation(op)
 		case code.OpEqual, code.OpNotEqual, code.OpLessThan, code.OpGreaterThan:
